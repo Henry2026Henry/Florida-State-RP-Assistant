@@ -1,0 +1,142 @@
+/* Additional Dashboard Styles */
+
+.sidebar-nav {
+  overflow-y: auto;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: var(--dark-bg);
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+.main-content {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) var(--darker-bg);
+}
+
+.main-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.main-content::-webkit-scrollbar-track {
+  background: var(--darker-bg);
+}
+
+.main-content::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.main-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    transform: translateX(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.player-card {
+  animation: slideIn 0.3s ease;
+}
+
+.stat-card {
+  animation: slideIn 0.3s ease;
+}
+
+/* Enhanced hover effects */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.stat-card:hover::before {
+  left: 100%;
+}
+
+/* Buttons enhancement */
+button {
+  font-family: inherit;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* Input focus states */ninput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.2);
+}
+
+textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.2);
+}
+
+/* Responsive tweaks */
+@media (max-width: 480px) {
+  .sidebar {
+    width: 200px;
+  }
+  
+  .nav-item .label {
+    display: none;
+  }
+  
+  .nav-item {
+    justify-content: center;
+    padding: 10px;
+  }
+  
+  .main-content {
+    padding: 15px;
+  }
+  
+  .page-header h1 {
+    font-size: 20px;
+  }
+  
+  .stats-grid {
+    gap: 15px;
+  }
+  
+  .stat-card {
+    padding: 15px;
+  }
+  
+  .player-actions {
+    flex-direction: column;
+  }
+}

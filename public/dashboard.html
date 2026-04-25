@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERLC Bot Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>🚔 ERLC</h2>
+                <p>Bot Dashboard</p>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-tab="overview">
+                    <span class="icon">📊</span>
+                    <span class="label">Overview</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="players">
+                    <span class="icon">👥</span>
+                    <span class="label">Players</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="commands">
+                    <span class="icon">⚡</span>
+                    <span class="label">Commands</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="logs">
+                    <span class="icon">📝</span>
+                    <span class="label">Logs</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="settings">
+                    <span class="icon">⚙️</span>
+                    <span class="label">Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info" id="userInfo">
+                    <img id="userAvatar" src="" alt="Avatar" class="user-avatar">
+                    <div class="user-details">
+                        <p class="user-name" id="userName">Loading...</p>
+                        <a href="/logout" class="logout-btn">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Overview Tab -->
+            <div class="tab-content active" id="overview-tab">
+                <div class="page-header">
+                    <h1>📊 Server Overview</h1>
+                    <button class="refresh-btn" id="refreshBtn">🔄 Refresh</button>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">🟢</div>
+                        <div class="stat-content">
+                            <p class="stat-label">Server Status</p>
+                            <p class="stat-value" id="serverStatus">Loading...</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-content">
+                            <p class="stat-label">Players Online</p>
+                            <p class="stat-value" id="playersOnline">-/-</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">⏱️</div>
+                        <div class="stat-content">
+                            <p class="stat-label">Server Uptime</p>
+                            <p class="stat-value" id="uptime">Loading...</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">📦</div>
+                        <div class="stat-content">
+                            <p class="stat-label">Version</p>
+                            <p class="stat-value" id="version">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h2>Recent Activity</h2>
+                    <div id="recentActivity" class="activity-list">
+                        <p class="loading">Loading activity...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Players Tab -->
+            <div class="tab-content" id="players-tab">
+                <div class="page-header">
+                    <h1>👥 Online Players</h1>
+                    <input type="text" id="playerSearch" placeholder="Search players..." class="search-input">
+                </div>
+
+                <div id="playersList" class="players-list">
+                    <p class="loading">Loading players...</p>
+                </div>
+            </div>
+
+            <!-- Commands Tab -->
+            <div class="tab-content" id="commands-tab">
+                <div class="page-header">
+                    <h1>⚡ Execute Commands</h1>
+                </div>
+
+                <div class="command-section">
+                    <h2>Quick Commands</h2>
+                    <div class="quick-commands">
+                        <button class="cmd-btn" data-cmd="restart">🔄 Restart Server</button>
+                        <button class="cmd-btn" data-cmd="stop">⏹️ Stop Server</button>
+                        <button class="cmd-btn" data-cmd="broadcast">📢 Broadcast</button>
+                    </div>
+                </div>
+
+                <div class="command-section">
+                    <h2>Custom Command</h2>
+                    <div class="command-input-group">
+                        <input type="text" id="commandInput" placeholder="Enter command..." class="command-input">
+                        <button id="executeBtn" class="execute-btn">Execute</button>
+                    </div>
+                    <div id="commandOutput" class="command-output" style="display:none;">
+                        <p id="commandResult"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs Tab -->
+            <div class="tab-content" id="logs-tab">
+                <div class="page-header">
+                    <h1>📝 Activity Logs</h1>
+                    <button class="refresh-btn" id="logsRefreshBtn">🔄 Refresh</button>
+                </div>
+
+                <div id="logsList" class="logs-list">
+                    <p class="loading">Loading logs...</p>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-content" id="settings-tab">
+                <div class="page-header">
+                    <h1>⚙️ Server Settings</h1>
+                </div>
+
+                <div class="settings-section">
+                    <h2>General Settings</h2>
+                    <div class="setting-item">
+                        <label>Server Name</label>
+                        <input type="text" value="Florida State RP" class="setting-input">
+                    </div>
+                    <div class="setting-item">
+                        <label>Max Players</label>
+                        <input type="number" value="128" class="setting-input">
+                    </div>
+                    <div class="setting-item">
+                        <label>Auto-restart enabled</label>
+                        <input type="checkbox" checked class="setting-checkbox">
+                    </div>
+                    <button class="save-btn">💾 Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>

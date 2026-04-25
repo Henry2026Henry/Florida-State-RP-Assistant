@@ -1,371 +1,225 @@
 // Dashboard JavaScript
 
-// State
-let currentPage = 'overview';
-let allPlayers = [];
-let allLogs = [];
-
-// Initialize
-document.addEventListener('DOMContentLoaded', async () => {
-  await loadUserInfo();
-  setupEventListeners();
-  refreshData();
-
-  // Auto-refresh every 30 seconds
-  setInterval(refreshData, 30000);
+// Load user info on page load
+document.addEventListener('DOMContentLoaded', () => {
+  loadUserInfo();
+  loadServerStats();
+  loadPlayers();
+  loadLogs();
+  setupTabNavigation();
+  setupCommandExecution();
 });
 
-// Load user info
+// Load user information
 async function loadUserInfo() {
   try {
     const response = await fetch('/api/user');
-    if (!response.ok) throw new Error('Not authenticated');
-
     const user = await response.json();
+    
     document.getElementById('userName').textContent = user.username;
-    document.getElementById('userAvatar').src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+    const avatarUrl = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+    document.getElementById('userAvatar').src = avatarUrl;
   } catch (error) {
-    console.error('Error loading user:', error);
-    window.location.href = '/';
+    console.error('Failed to load user info:', error);
   }
 }
 
-// Setup event listeners
-function setupEventListeners() {
-  // Navigation
-  document.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      const page = link.dataset.page;
-      switchPage(page);
-    });
-  });
-
-  // Logout
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await fetch('/api/logout', { method: 'POST' });
-    window.location.href = '/';
-  });
-
-  // Player search
-  document.getElementById('playerSearch').addEventListener('input', filterPlayersList);
-
-  // Log search
-  document.getElementById('logSearch').addEventListener('input', filterLogsList);
-
-  // Log filter
-  document.getElementById('logFilter').addEventListener('change', filterLogsList);
-}
-
-// Switch page
-function switchPage(page) {
-  // Hide all pages
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-
-  // Remove active from nav
-  document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-
-  // Show selected page
-  document.getElementById(page).classList.add('active');
-
-  // Mark nav as active
-  document.querySelector(`[data-page="${page}"]`).classList.add('active');
-
-  currentPage = page;
-
-  // Load page-specific data
-  if (page === 'players') loadPlayers();
-  if (page === 'logs') loadLogs();
-}
-
-// Refresh all data
-async function refreshData() {
+// Load server statistics
+async function loadServerStats() {
   try {
-    const statsResponse = await fetch('/api/server/stats');
-    const stats = await statsResponse.json();
-
-    // Update stats
-    document.getElementById('playerCount').textContent = stats.playerCount;
-    document.getElementById('maxPlayers').textContent = `of ${stats.maxPlayers}`;
+    const response = await fetch('/api/server/stats');
+    const stats = await response.json();
+    
+    document.getElementById('serverStatus').textContent = stats.status;
+    document.getElementById('playersOnline').textContent = `${stats.playersOnline}/${stats.maxPlayers}`;
     document.getElementById('uptime').textContent = stats.uptime;
     document.getElementById('version').textContent = stats.version;
-    document.getElementById('statusText').textContent = stats.status;
-    document.getElementById('lastUpdate').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
-
-    // Update status badge
-    const badge = document.getElementById('serverStatus');
-    badge.textContent = stats.status === 'Online' ? '● Online' : '● Offline';
-    badge.classList.remove('offline');
-    if (stats.status !== 'Online') badge.classList.add('offline');
-
-    // Load activity logs
-    loadActivityLogs();
   } catch (error) {
-    console.error('Error refreshing data:', error);
+    console.error('Failed to load server stats:', error);
+    document.getElementById('serverStatus').textContent = 'Offline';
   }
 }
 
-// Load activity logs
-async function loadActivityLogs() {
-  try {
-    const response = await fetch('/api/server/logs');
-    const logs = await response.json();
-
-    const container = document.getElementById('recentActivity');
-    container.innerHTML = logs.slice(0, 5).map(log => `
-      <div class="activity-item">
-        <strong>${log.action}</strong>
-        <small>${new Date(log.timestamp).toLocaleTimeString()} - ${log.user}</small>
-      </div>
-    `).join('');
-  } catch (error) {
-    console.error('Error loading activity:', error);
-  }
-}
-
-// Load players
+// Load online players
 async function loadPlayers() {
   try {
     const response = await fetch('/api/server/players');
-    allPlayers = await response.json();
-    displayPlayers(allPlayers);
-  } catch (error) {
-    console.error('Error loading players:', error);
-  }
-}
-
-// Display players in table
-function displayPlayers(players) {
-  const tbody = document.getElementById('playersTableBody');
-  
-  if (players.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" class="loading">No players online</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = players.map(player => `
-    <tr>
-      <td>${player.username}</td>
-      <td><span style="background: #e2e8f0; padding: 4px 8px; border-radius: 4px;">${player.rank}</span></td>
-      <td>${new Date(player.joinTime).toLocaleTimeString()}</td>
-      <td>
-        <div class="action-buttons">
-          <button class="action-btn" onclick="warnPlayer('${player.id}')">Warn</button>
-          <button class="action-btn danger" onclick="kickPlayer('${player.id}')">Kick</button>
+    const data = await response.json();
+    
+    const playersList = document.getElementById('playersList');
+    playersList.innerHTML = '';
+    
+    if (data.players.length === 0) {
+      playersList.innerHTML = '<p class="no-data">No players online</p>';
+      return;
+    }
+    
+    data.players.forEach(player => {
+      const playerCard = document.createElement('div');
+      playerCard.className = 'player-card';
+      playerCard.innerHTML = `
+        <div class="player-info">
+          <p class="player-name">${player.username}</p>
+          <p class="player-rank">${player.rank}</p>
         </div>
-      </td>
-    </tr>
-  `).join('');
+        <div class="player-actions">
+          <button class="action-btn warn-btn" onclick="warnPlayer(${player.id}, '${player.username}')">⚠️ Warn</button>
+          <button class="action-btn kick-btn" onclick="kickPlayer(${player.id}, '${player.username}')">👢 Kick</button>
+        </div>
+      `;
+      playersList.appendChild(playerCard);
+    });
+  } catch (error) {
+    console.error('Failed to load players:', error);
+    document.getElementById('playersList').innerHTML = '<p class="error">Failed to load players</p>';
+  }
 }
 
-// Filter players list
-function filterPlayersList() {
-  const searchTerm = document.getElementById('playerSearch').value.toLowerCase();
-  const filtered = allPlayers.filter(p => p.username.toLowerCase().includes(searchTerm));
-  displayPlayers(filtered);
-}
-
-// Load logs
+// Load server logs
 async function loadLogs() {
   try {
     const response = await fetch('/api/server/logs');
-    allLogs = await response.json();
-    displayLogs(allLogs);
-  } catch (error) {
-    console.error('Error loading logs:', error);
-  }
-}
-
-// Display logs
-function displayLogs(logs) {
-  const container = document.getElementById('logsList');
-  
-  if (logs.length === 0) {
-    container.innerHTML = '<p class="loading">No logs available</p>';
-    return;
-  }
-
-  container.innerHTML = logs.map(log => `
-    <div class="log-item">
-      <div class="log-time">${new Date(log.timestamp).toLocaleString()}</div>
-      <div class="log-action">${log.action}</div>
-      <div class="log-details">${log.user} - ${log.details}</div>
-    </div>
-  `).join('');
-}
-
-// Filter logs
-function filterLogsList() {
-  const searchTerm = document.getElementById('logSearch').value.toLowerCase();
-  const filterType = document.getElementById('logFilter').value;
-
-  let filtered = allLogs.filter(log => {
-    const matchesSearch = log.action.toLowerCase().includes(searchTerm) ||
-                         log.user.toLowerCase().includes(searchTerm) ||
-                         log.details.toLowerCase().includes(searchTerm);
-
-    if (filterType === 'all') return matchesSearch;
+    const data = await response.json();
     
-    const actionMap = {
-      'join': 'joined',
-      'leave': 'left',
-      'command': 'executed',
-      'restart': 'restarted'
-    };
+    const logsList = document.getElementById('logsList');
+    logsList.innerHTML = '';
+    
+    data.logs.forEach(log => {
+      const logEntry = document.createElement('div');
+      logEntry.className = `log-entry log-${log.type}`;
+      const time = new Date(log.timestamp).toLocaleTimeString();
+      logEntry.innerHTML = `
+        <span class="log-time">${time}</span>
+        <span class="log-message">${log.message}</span>
+      `;
+      logsList.appendChild(logEntry);
+    });
+  } catch (error) {
+    console.error('Failed to load logs:', error);
+  }
+}
 
-    return matchesSearch && log.action.toLowerCase().includes(actionMap[filterType] || '');
+// Setup tab navigation
+function setupTabNavigation() {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.preventDefault();
+      
+      // Remove active class from all items
+      document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      
+      // Add active class to clicked item
+      item.classList.add('active');
+      const tabName = item.dataset.tab;
+      document.getElementById(`${tabName}-tab`).classList.add('active');
+    });
   });
+}
 
-  displayLogs(filtered);
+// Setup command execution
+function setupCommandExecution() {
+  document.getElementById('executeBtn').addEventListener('click', () => {
+    const command = document.getElementById('commandInput').value;
+    if (command.trim()) {
+      executeCommand(command);
+    }
+  });
+  
+  document.querySelectorAll('.cmd-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cmd = btn.dataset.cmd;
+      executeCommand(cmd);
+    });
+  });
+  
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    loadServerStats();
+  });
+  
+  document.getElementById('logsRefreshBtn').addEventListener('click', () => {
+    loadLogs();
+  });
 }
 
 // Execute command
-async function executeCommand() {
-  const command = document.getElementById('commandSelect').value;
-  const params = document.getElementById('commandParams').value;
-
-  if (!command) {
-    showCommandResponse('Please select a command', 'error');
-    return;
-  }
-
+async function executeCommand(command) {
   try {
     const response = await fetch('/api/server/command', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ command: `${command} ${params}` })
+      body: JSON.stringify({ command })
     });
-
+    
     const result = await response.json();
+    const output = document.getElementById('commandOutput');
+    const resultEl = document.getElementById('commandResult');
     
     if (result.success) {
-      showCommandResponse(`Command executed: ${result.response}`, 'success');
-      document.getElementById('commandParams').value = '';
+      resultEl.textContent = `✅ ${result.message}`;
+      resultEl.style.color = '#00ff00';
     } else {
-      showCommandResponse(`Error: ${result.error}`, 'error');
+      resultEl.textContent = `❌ Error: ${result.error}`;
+      resultEl.style.color = '#ff0000';
     }
+    
+    output.style.display = 'block';
+    document.getElementById('commandInput').value = '';
   } catch (error) {
-    showCommandResponse(`Error: ${error.message}`, 'error');
+    console.error('Command execution failed:', error);
   }
 }
 
-// Show command response
-function showCommandResponse(message, type) {
-  const responseDiv = document.getElementById('commandResponse');
-  responseDiv.textContent = message;
-  responseDiv.className = `command-response ${type}`;
-}
-
-// Set command
-function setCommand(cmd) {
-  document.getElementById('commandSelect').value = cmd;
-  document.getElementById('commandParams').focus();
-}
-
-// Player actions
-async function warnPlayer(playerId) {
-  const reason = prompt('Warn reason:');
-  if (!reason) return;
-
+// Warn player
+async function warnPlayer(playerId, playerName) {
+  const reason = prompt(`Warn ${playerName}? Enter reason:`);
+  if (reason === null) return;
+  
   try {
-    await fetch('/api/server/warn', {
+    const response = await fetch('/api/server/warn', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ playerId, reason })
     });
-
-    alert('Player warned successfully');
+    
+    const result = await response.json();
+    alert(result.message);
     loadPlayers();
   } catch (error) {
-    alert('Error warning player: ' + error.message);
+    alert('Failed to warn player');
   }
 }
 
-async function kickPlayer(playerId) {
-  if (!confirm('Are you sure you want to kick this player?')) return;
-
-  const reason = prompt('Kick reason:');
-  if (!reason) return;
-
+// Kick player
+async function kickPlayer(playerId, playerName) {
+  const reason = prompt(`Kick ${playerName}? Enter reason:`);
+  if (reason === null) return;
+  
   try {
-    await fetch('/api/server/kick', {
+    const response = await fetch('/api/server/kick', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ playerId, reason })
     });
-
-    alert('Player kicked successfully');
+    
+    const result = await response.json();
+    alert(result.message);
     loadPlayers();
   } catch (error) {
-    alert('Error kicking player: ' + error.message);
+    alert('Failed to kick player');
   }
 }
 
-// Filter players by rank
-function filterPlayers(rank) {
-  const buttons = document.querySelectorAll('.filter-btn');
-  buttons.forEach(btn => btn.classList.remove('active'));
-  event.target.classList.add('active');
-
-  let filtered = allPlayers;
-
-  if (rank !== 'all') {
-    filtered = allPlayers.filter(p => p.rank.toLowerCase().includes(rank));
-  }
-
-  displayPlayers(filtered);
-}
-
-// Save settings
-async function saveSettings() {
-  const settings = {
-    serverName: document.getElementById('serverName').value,
-    maxPlayers: parseInt(document.getElementById('maxPlayersInput').value),
-    pvpEnabled: document.getElementById('pvpToggle').checked,
-    whitelist: document.getElementById('whitelistToggle').checked
-  };
-
-  try {
-    const response = await fetch('/api/server/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(settings)
+// Player search
+document.addEventListener('DOMContentLoaded', () => {
+  const searchInput = document.getElementById('playerSearch');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      document.querySelectorAll('.player-card').forEach(card => {
+        const playerName = card.querySelector('.player-name').textContent.toLowerCase();
+        card.style.display = playerName.includes(searchTerm) ? 'flex' : 'none';
+      });
     });
-
-    const result = await response.json();
-    
-    if (result.success) {
-      alert('Settings saved successfully');
-    } else {
-      alert('Error saving settings: ' + result.error);
-    }
-  } catch (error) {
-    alert('Error: ' + error.message);
   }
-}
-
-// Save restart settings
-async function saveRestartSettings() {
-  const settings = {
-    autoRestart: document.getElementById('autoRestartToggle').checked,
-    autoRestartInterval: parseInt(document.getElementById('restartInterval').value)
-  };
-
-  try {
-    const response = await fetch('/api/server/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(settings)
-    });
-
-    const result = await response.json();
-    
-    if (result.success) {
-      alert('Restart settings updated successfully');
-    } else {
-      alert('Error updating settings: ' + result.error);
-    }
-  } catch (error) {
-    alert('Error: ' + error.message);
-  }
-}
+});
